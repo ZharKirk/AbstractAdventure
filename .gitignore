@@ -1,0 +1,10 @@
+*.sln
+.vs/
+Binaries/
+Content/Assets/
+Content/FX/
+Content/Maps/
+Content/Materials/
+Intermediate/
+Content/UI/
+Saved/
