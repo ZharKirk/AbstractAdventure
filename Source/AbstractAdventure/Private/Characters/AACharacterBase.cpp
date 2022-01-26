@@ -7,8 +7,8 @@
 #include "GameFramework/Controller.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/InputComponent.h"
-#include "DrawDebugHelpers.h"
 #include "Items/BaseInteractableActor.h"
+#include "Components/TraceForwardComponent.h"
 
 // Sets default values
 AAACharacterBase::AAACharacterBase()
@@ -31,8 +31,6 @@ AAACharacterBase::AAACharacterBase()
 
 	BaseTurnRate = 45.0F;
 	BaseLookUpAtRate = 45.0F;
-
-	TraceDistance = 500;
 }
 
 
@@ -63,7 +61,13 @@ void AAACharacterBase::MoveRight(float Value)
 
 void AAACharacterBase::InteractPressed()
 {
-	TraceForward();
+	TraceForwardComponent = Cast<UTraceForwardComponent>(GetComponentByClass(UTraceForwardComponent::StaticClass()));
+
+	if (TraceForwardComponent)
+	{ 
+		TraceForwardComponent->TraceForward();	
+	}
+	
 	PickupItem();
 	ToggleStationaryItem();
 }
@@ -96,38 +100,6 @@ void AAACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 }
 
-
-void AAACharacterBase::TraceForward_Implementation()
-{
-	FVector Loc;
-	FRotator Rot;
-	FHitResult Hit;
-
-	GetController()->GetPlayerViewPoint(Loc, Rot);
-
-	FVector Start = Loc;
-	FVector End = Start + (Rot.Vector() * TraceDistance);
-
-	FCollisionQueryParams TraceParams;
-	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams);
-
-	FComponentQueryParams DefaultComponentQueryParams;
-	FCollisionResponseParams DefaultResponseParams;
-	bool bHitByChannel = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, DefaultComponentQueryParams, DefaultResponseParams);
-
-	//DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 2.0f);
-
-	if (bHit)
-	{
-		//DrawDebugBox(GetWorld(), Hit.ImpactPoint, FVector(5, 5, 5), FColor::Emerald, false, 2.0f);		
-		GetInteractableItem(bHitByChannel, Hit);
-		GetStationaryItem(bHitByChannel, Hit);
-	}
-	else
-	{
-		CurrentStationaryActor = NULL;
-	}
-}
 
 void AAACharacterBase::GetInteractableItem(bool bHitByChannel, FHitResult& Hit)
 {

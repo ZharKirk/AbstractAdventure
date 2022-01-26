@@ -11,6 +11,7 @@ class UCameraComponent;
 class UStaticMeshComponent;
 class USceneComponent;
 class ABaseInteractableActor;
+class UTraceForwardComponent;
 
 
 UCLASS()
@@ -37,6 +38,8 @@ public:
 	UPROPERTY(EditAnywhere)
 	ABaseInteractableActor* CurrentStationaryActor;
 
+	UTraceForwardComponent* TraceForwardComponent;
+
 protected:
 	void InteractPressed();
 	void ActionPressed();
@@ -57,17 +60,17 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	float BaseLookUpAtRate;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
-	float TraceDistance;
+	//UPROPERTY(EditDefaultsOnly, Category = "Interaction")
+	//float TraceDistance;
 
-	UFUNCTION(BlueprintNativeEvent)
-	void TraceForward();
-	void TraceForward_Implementation();
-
-	void GetInteractableItem(bool bHitByChannel, FHitResult& Hit);
-	void GetStationaryItem(bool bHitByChannel, FHitResult& Hit);
+	//UFUNCTION(BlueprintNativeEvent)
+	//void TraceForward();
+	//void TraceForward_Implementation();
 
 public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	void GetInteractableItem(bool bHitByChannel, FHitResult& Hit);
+	void GetStationaryItem(bool bHitByChannel, FHitResult& Hit);
 };

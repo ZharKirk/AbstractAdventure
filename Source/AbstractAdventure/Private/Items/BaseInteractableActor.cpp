@@ -32,8 +32,6 @@ ABaseInteractableActor::ABaseInteractableActor()
 	ItemFXComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ItemEffect"));
 	ItemFXComponent->SetupAttachment(ItemMuzzleLocation);
 
-	//ToggledActor = CreateDefaultSubobject<AActor>(TEXT("ToggledActor"));
-
 	bBroken = false;
 	bCharged = false;
 	bToggledOn = false;
