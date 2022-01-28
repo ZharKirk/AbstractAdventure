@@ -43,7 +43,7 @@ public:
 protected:
 	void InteractPressed();
 	void ActionPressed();
-	void PickupItem();
+	void SetPickupItemState();
 	void ToggleStationaryItem();
 	void UsePickupItem();
 	void AttachItem(TArray<UStaticMeshComponent*>& Components, bool bItemGravity, bool bItemHolding);
@@ -60,17 +60,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	float BaseLookUpAtRate;
 
-	//UPROPERTY(EditDefaultsOnly, Category = "Interaction")
-	//float TraceDistance;
-
-	//UFUNCTION(BlueprintNativeEvent)
-	//void TraceForward();
-	//void TraceForward_Implementation();
-
 public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	void GetInteractableItem(bool bHitByChannel, FHitResult& Hit);
-	void GetStationaryItem(bool bHitByChannel, FHitResult& Hit);
+	void GetInteractableTypeItem(bool bHitByChannel, FHitResult& Hit);
 };

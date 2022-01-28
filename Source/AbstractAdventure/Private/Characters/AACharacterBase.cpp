@@ -59,26 +59,6 @@ void AAACharacterBase::MoveRight(float Value)
 }
 
 
-void AAACharacterBase::InteractPressed()
-{
-	TraceForwardComponent = Cast<UTraceForwardComponent>(GetComponentByClass(UTraceForwardComponent::StaticClass()));
-
-	if (TraceForwardComponent)
-	{ 
-		TraceForwardComponent->TraceForward();	
-	}
-	
-	PickupItem();
-	ToggleStationaryItem();
-}
-
-
-void AAACharacterBase::ActionPressed()
-{
-	UsePickupItem();
-}
-
-
 // Called to bind functionality to input
 void AAACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -101,8 +81,9 @@ void AAACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 }
 
 
-void AAACharacterBase::GetInteractableItem(bool bHitByChannel, FHitResult& Hit)
+void AAACharacterBase::GetInteractableTypeItem(bool bHitByChannel, FHitResult& Hit)
 {
+	// if Interactable Actor
 	if (!bPlayerHoldingItem)
 	{
 		if (bHitByChannel)
@@ -121,11 +102,8 @@ void AAACharacterBase::GetInteractableItem(bool bHitByChannel, FHitResult& Hit)
 			CurrentInteractableActor = NULL;
 		}
 	}
-}
 
-
-void AAACharacterBase::GetStationaryItem(bool bHitByChannel, FHitResult& Hit)
-{
+	// if Stationary Actor
 	if (bHitByChannel)
 	{
 		if (Hit.GetActor()->GetClass()->IsChildOf(ABaseInteractableActor::StaticClass()))
@@ -144,7 +122,27 @@ void AAACharacterBase::GetStationaryItem(bool bHitByChannel, FHitResult& Hit)
 }
 
 
-void AAACharacterBase::PickupItem()
+void AAACharacterBase::InteractPressed() // "E" - to interact with object
+{
+	TraceForwardComponent = Cast<UTraceForwardComponent>(GetComponentByClass(UTraceForwardComponent::StaticClass()));
+
+	if (TraceForwardComponent)
+	{
+		TraceForwardComponent->TraceForward();
+	}
+
+	SetPickupItemState();
+	ToggleStationaryItem();
+}
+
+
+void AAACharacterBase::ActionPressed() // "LMB" - to use what equiped
+{
+	UsePickupItem();
+}
+
+
+void AAACharacterBase::SetPickupItemState()
 {
 	if (CurrentInteractableActor)
 	{
@@ -152,7 +150,6 @@ void AAACharacterBase::PickupItem()
 		{
 			bPlayerHoldingItem = !bPlayerHoldingItem; // set to NOT (current state)
 
-			// Pickup Start
 			TArray<UStaticMeshComponent*> Components;
 			CurrentInteractableActor->GetComponents<UStaticMeshComponent>(Components);
 
@@ -230,14 +227,7 @@ void AAACharacterBase::ToggleStationaryItem()
 	{
 		if (CurrentStationaryActor->bStationary)
 		{
-			if (!CurrentStationaryActor->bToggledOn)
-			{
-				CurrentStationaryActor->ToggleOn();
-			}
-			else
-			{
-				CurrentStationaryActor->ToggleOff();
-			}
+			CurrentStationaryActor->Toggle();
 		}
 	}
 }

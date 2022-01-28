@@ -19,9 +19,7 @@ public:
 
 	AAACharacterBase* Player;
 
-	//UFUNCTION(BlueprintNativeEvent)
 	void TraceForward();
-	//void TraceForward_Implementation();
 
 protected:
 	// Called when the game starts
@@ -29,10 +27,5 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
 	float TraceDistance;
-
-public:	
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
 		
 };

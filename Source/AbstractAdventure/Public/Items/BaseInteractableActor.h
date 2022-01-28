@@ -29,11 +29,8 @@ public:
 	UPROPERTY(VisibleDefaultsOnly, Category = "ItemParameters")
 	USceneComponent* ItemMuzzleLocation;
 
-	//UPROPERTY(EditAnywhere, Category = "ItemParameters")
-	//TSoftObjectPtr<AActor> ReferencedItemActor;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Building")// test
-	TSoftObjectPtr<AActor> ReferencedItemActor;// test
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Building")
+	TSoftObjectPtr<AActor> ReferencedItemActor;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
 	UNiagaraComponent* ItemFXComponent;
@@ -49,12 +46,10 @@ private:
 	float DefaultHealth;
 
 	void SetBaseDynamicMaterial();
+
 	UMaterialInstanceDynamic* ItemBaseDynamicMaterial;
 	
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
+public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ItemStates")
 	bool bBroken;
 
@@ -62,7 +57,7 @@ public:
 	bool bCharged;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ItemStates")
-	bool bToggledOn;
+	bool bToggled;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ItemStates")
 	bool bCanBePickedUp;
@@ -81,12 +76,11 @@ public:
 
 	void UseItem();
 
-	void ToggleOn();
-	void ToggleOff();
+	void Toggle();
 
 	void SwitchMaterial();
 
 	void ContactReferencedItemActor();
 
-	AActor* GetLoadedActor();// test
+	AActor* GetLoadedActor();
 };

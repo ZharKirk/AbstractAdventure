@@ -13,9 +13,6 @@
 // Sets default values
 ABaseInteractableActor::ABaseInteractableActor()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
-
 	ItemMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ItemMeshComponent"));
 	ItemMeshComp->SetSimulatePhysics(true);
 	ItemMeshComp->SetupAttachment(RootComponent);
@@ -34,7 +31,8 @@ ABaseInteractableActor::ABaseInteractableActor()
 
 	bBroken = false;
 	bCharged = false;
-	bToggledOn = false;
+	bToggled = false;
+
 	bCanBePickedUp = false;
 	bCanBeUsedPickedUp = false;
 	bStationary = false;
@@ -56,13 +54,8 @@ void ABaseInteractableActor::BeginPlay()
 	Super::BeginPlay();
 
 	SetBaseDynamicMaterial();
-}
 
-
-// Called every frame
-void ABaseInteractableActor::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
+	if (ItemFXComponent) { ItemFXComponent->Deactivate(); } // Maybe there is a better way ...
 }
 
 
@@ -107,38 +100,25 @@ float ABaseInteractableActor::TakeDamage(float DamageAmount, FDamageEvent const&
 
 void ABaseInteractableActor::UseItem() // TODO Rewrite this
 {
-	if (ChargesAmount != 0)
+	if (bCanBeUsedPickedUp)
 	{
-		if (ItemFXComponent)
+		if (ChargesAmount)
 		{
-			if (bCanBeUsedPickedUp)
-			{
-				ItemFXComponent->ResetSystem(); // Maybe there is a better way ...
-				ChargesAmount -= 1;
-				UE_LOG(LogTemp, Warning, TEXT("%i"), ChargesAmount);
-				// TODO Use
-			}
+			if (ItemFXComponent) { ItemFXComponent->ResetSystem(); } // Maybe there is a better way ...
+			ChargesAmount -= 1;
+			UE_LOG(LogTemp, Warning, TEXT("%i"), ChargesAmount);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("No charges left!"));
 		}
 	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No charges left!"));
-	}
 }
 
 
-void ABaseInteractableActor::ToggleOn()
+void ABaseInteractableActor::Toggle()
 {
-	bToggledOn = true;
-	SwitchMaterial();
-	ContactReferencedItemActor();
-}
-
-
-void ABaseInteractableActor::ToggleOff()
-{
-	bToggledOn = false;
-	SwitchMaterial();
+	bToggled = !bToggled; // set to NOT (current state)
 	ContactReferencedItemActor();
 }
 
@@ -149,7 +129,7 @@ void ABaseInteractableActor::ContactReferencedItemActor()
 
 	if (ResultActor)
 	{
-		ResultActor->SwitchMaterial(); // TODO ?
+		UE_LOG(LogTemp, Warning, TEXT("%s - respond!"), *ResultActor->GetName());
 	}
 	else
 	{
@@ -158,15 +138,13 @@ void ABaseInteractableActor::ContactReferencedItemActor()
 }
 
 
-AActor* ABaseInteractableActor::GetLoadedActor()
+AActor* ABaseInteractableActor::GetLoadedActor() // To get refereced actor
 {
 	FStreamableManager Streamable;
-
 	if (ReferencedItemActor.IsPending())
 	{
 		const FSoftObjectPath& AssetRef = ReferencedItemActor.ToString();
 		ReferencedItemActor = Cast<AActor>(Streamable.LoadSynchronous(AssetRef));
 	}
-
 	return ReferencedItemActor.Get();
 }
