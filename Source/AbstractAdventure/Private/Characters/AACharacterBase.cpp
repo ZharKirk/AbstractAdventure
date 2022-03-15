@@ -81,10 +81,26 @@ void AAACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 }
 
 
-void AAACharacterBase::GetInteractableTypeItem(bool bHitByChannel, FHitResult& Hit)
+void AAACharacterBase::GetInteractableTypeItem()
 {
-	// if Interactable Actor
-	if (!bPlayerHoldingItem)
+	FVector Loc;
+	FRotator Rot;
+	FHitResult Hit;
+	bool bHitByChannel = false;
+	GetController()->GetPlayerViewPoint(Loc, Rot);
+
+	TraceForwardComponent = Cast<UTraceForwardComponent>(GetComponentByClass(UTraceForwardComponent::StaticClass()));
+
+	if (TraceForwardComponent)
+	{
+		TraceForwardComponent->TraceForward(Loc, Rot, bHitByChannel, Hit);
+	}
+	else
+	{
+		return;
+	}
+		
+	if (!bPlayerHoldingItem) // if Interactable Actor
 	{
 		if (bHitByChannel)
 		{
@@ -103,8 +119,7 @@ void AAACharacterBase::GetInteractableTypeItem(bool bHitByChannel, FHitResult& H
 		}
 	}
 
-	// if Stationary Actor
-	if (bHitByChannel)
+	if (bHitByChannel) // if Stationary Actor
 	{
 		if (Hit.GetActor()->GetClass()->IsChildOf(ABaseInteractableActor::StaticClass()))
 		{
@@ -124,13 +139,7 @@ void AAACharacterBase::GetInteractableTypeItem(bool bHitByChannel, FHitResult& H
 
 void AAACharacterBase::InteractPressed() // "E" - to interact with object
 {
-	TraceForwardComponent = Cast<UTraceForwardComponent>(GetComponentByClass(UTraceForwardComponent::StaticClass()));
-
-	if (TraceForwardComponent)
-	{
-		TraceForwardComponent->TraceForward();
-	}
-
+	GetInteractableTypeItem();
 	SetPickupItemState();
 	ToggleStationaryItem();
 }

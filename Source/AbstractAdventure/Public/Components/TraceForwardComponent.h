@@ -6,7 +6,6 @@
 #include "Components/ActorComponent.h"
 #include "TraceForwardComponent.generated.h"
 
-class AAACharacterBase;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ABSTRACTADVENTURE_API UTraceForwardComponent : public UActorComponent
@@ -17,15 +16,12 @@ public:
 	// Sets default values for this component's properties
 	UTraceForwardComponent();
 
-	AAACharacterBase* Player;
-
-	void TraceForward();
+	void TraceForward(FVector Loc, FRotator Rot, bool& bHitByChannel, FHitResult& Hit);
 
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
-	float TraceDistance;
-		
+	float TraceDistance;		
 };

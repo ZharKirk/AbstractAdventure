@@ -56,6 +56,8 @@ void ABaseInteractableActor::BeginPlay()
 	SetBaseDynamicMaterial();
 
 	if (ItemFXComponent) { ItemFXComponent->Deactivate(); } // Maybe there is a better way ...
+
+
 }
 
 
@@ -129,6 +131,7 @@ void ABaseInteractableActor::ContactReferencedItemActor()
 
 	if (ResultActor)
 	{
+		ResultActor->SwitchMaterial(); // TODO delete
 		UE_LOG(LogTemp, Warning, TEXT("%s - respond!"), *ResultActor->GetName());
 	}
 	else

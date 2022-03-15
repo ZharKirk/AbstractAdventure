@@ -2,7 +2,6 @@
 
 
 #include "Components/TraceForwardComponent.h"
-#include "Characters/AACharacterBase.h"
 #include "DrawDebugHelpers.h"
 
 // Sets default values for this component's properties
@@ -19,39 +18,21 @@ void UTraceForwardComponent::BeginPlay()
 }
 
 
-void UTraceForwardComponent::TraceForward()
+void UTraceForwardComponent::TraceForward(FVector Loc, FRotator Rot, bool& bHitByChannel, FHitResult& Hit)
 {
-	Player = Cast<AAACharacterBase>(GetOwner());
+	FVector Start = Loc;
+	FVector End = Start + (Rot.Vector() * TraceDistance);
 
-	if (Player)
+	FCollisionQueryParams TraceParams;
+	FComponentQueryParams DefaultComponentQueryParams;
+	FCollisionResponseParams DefaultResponseParams;
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams);
+
+	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 2.0f);
+
+	if (bHit)
 	{
-		FVector Loc;
-		FRotator Rot;
-		FHitResult Hit;
-
-		Player->GetController()->GetPlayerViewPoint(Loc, Rot);
-
-		FVector Start = Loc;
-		FVector End = Start + (Rot.Vector() * TraceDistance);
-
-		FCollisionQueryParams TraceParams;
-		bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams);
-
-		FComponentQueryParams DefaultComponentQueryParams;
-		FCollisionResponseParams DefaultResponseParams;
-		bool bHitByChannel = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, DefaultComponentQueryParams, DefaultResponseParams);
-
-		DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 2.0f);
-
-		if (bHit)
-		{
-			DrawDebugBox(GetWorld(), Hit.ImpactPoint, FVector(5, 5, 5), FColor::Emerald, false, 2.0f);	
-
-			Player->GetInteractableTypeItem(bHitByChannel, Hit);
-		}
-		else
-		{
-			Player->CurrentStationaryActor = NULL;
-		}
+		DrawDebugBox(GetWorld(), Hit.ImpactPoint, FVector(5, 5, 5), FColor::Emerald, false, 2.0f);
+		bHitByChannel = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, DefaultComponentQueryParams, DefaultResponseParams);
 	}
 }

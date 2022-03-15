@@ -29,7 +29,7 @@ public:
 	UPROPERTY(VisibleDefaultsOnly, Category = "ItemParameters")
 	USceneComponent* ItemMuzzleLocation;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Building")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Building")
 	TSoftObjectPtr<AActor> ReferencedItemActor;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
