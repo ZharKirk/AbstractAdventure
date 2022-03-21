@@ -94,6 +94,7 @@ void AAACharacterBase::GetInteractableTypeItem()
 	if (TraceForwardComponent)
 	{
 		TraceForwardComponent->TraceForward(Loc, Rot, bHitByChannel, Hit);
+		UE_LOG(LogTemp, Warning, TEXT("TraceForwardComponent"));
 	}
 	else
 	{
