@@ -12,6 +12,7 @@ class UStaticMeshComponent;
 class USceneComponent;
 class ABaseInteractableActor;
 class UTraceForwardComponent;
+class AItemInteraction;
 
 
 UCLASS()
@@ -30,25 +31,13 @@ public:
 	UStaticMeshComponent* MeshComp;
 
 	UPROPERTY(EditAnywhere)
-	class USceneComponent* ItemHoldingComponent;
+	USceneComponent* ItemHoldingComponent;
 
-	UPROPERTY(EditAnywhere)
-	ABaseInteractableActor* CurrentInteractableActor;
-
-	UPROPERTY(EditAnywhere)
-	ABaseInteractableActor* CurrentStationaryActor;
-
-	UTraceForwardComponent* TraceForwardComponent;
+	AItemInteraction* ItemInteractionComponent;
 
 protected:
 	void InteractPressed();
 	void ActionPressed();
-	void SetPickupItemState();
-	void ToggleStationaryItem();
-	void UsePickupItem();
-	void AttachItem(TArray<UStaticMeshComponent*>& Components, bool bItemGravity, bool bItemHolding);
-
-	bool bPlayerHoldingItem;
 
 	void MoveForward(float Value);
 	void MoveRight(float Value);
@@ -64,5 +53,6 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	void GetInteractableTypeItem();
+	FVector ForwardVector;
+
 };
