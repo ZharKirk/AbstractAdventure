@@ -30,6 +30,8 @@ AAACharacterBase::AAACharacterBase()
 
 	ItemInteractionComponent = Cast<AItemInteraction>(GetComponentByClass(AItemInteraction::StaticClass()));
 
+	TraceForwardComponent = nullptr;
+
 	BaseTurnRate = 45.0F;
 	BaseLookUpAtRate = 45.0F;
 	ForwardVector = CameraComp->GetForwardVector();
@@ -85,9 +87,19 @@ void AAACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 void AAACharacterBase::InteractPressed() // "E" - to interact with object
 {
-	ItemInteractionComponent->GetInteractableTypeItem();
-	//ItemInteractionComponent->SetPickupItemState();
-	//ItemInteractionComponent->ToggleStationaryItem();
+	TraceForwardComponent = Cast<UTraceForwardComponent>(GetComponentByClass(UTraceForwardComponent::StaticClass()));
+
+	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	{
+		APlayerController* PlayerController = Cast<APlayerController>(*Iterator);
+
+		if (PlayerController && TraceForwardComponent)
+		{
+			ItemInteractionComponent->GetInteractableTypeItem(PlayerController, TraceForwardComponent);
+			//ItemInteractionComponent->SetPickupItemState(this, ForwardVector);
+			//ItemInteractionComponent->ToggleStationaryItem();
+		}
+	}	
 }
 
 

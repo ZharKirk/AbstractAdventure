@@ -26,14 +26,12 @@ public:
 	UPROPERTY(EditAnywhere)
 	ABaseInteractableActor* CurrentStationaryActor;
 
-	AAACharacterBase* Player;
-	APlayerController* PlayerController;
-
-	UTraceForwardComponent* TraceForwardComponent;
-
-	void SetPickupItemState();
-	void ToggleStationaryItem();
+	
+	void GetInteractableTypeItem(APlayerController* PController, UTraceForwardComponent* TraceForwardComponent);
+	void SetPickupItemState(AAACharacterBase* Player, FVector ForwardVector);
+	void AttachItem(AAACharacterBase* Player, FVector ForwardVector, TArray<UStaticMeshComponent*>& Components, bool bItemGravity, bool bItemHolding);
 	void UsePickupItem();
+	void ToggleStationaryItem();
 
 protected:
 	// Called when the game starts or when spawned
@@ -41,11 +39,7 @@ protected:
 
 	bool bPlayerHoldingItem;
 
-	void AttachItem(TArray<UStaticMeshComponent*>& Components, bool bItemGravity, bool bItemHolding);
-
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
-	void GetInteractableTypeItem();
 };

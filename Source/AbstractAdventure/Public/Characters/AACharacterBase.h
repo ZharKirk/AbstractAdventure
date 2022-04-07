@@ -35,6 +35,8 @@ public:
 
 	AItemInteraction* ItemInteractionComponent;
 
+	UTraceForwardComponent* TraceForwardComponent;
+
 protected:
 	void InteractPressed();
 	void ActionPressed();
