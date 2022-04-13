@@ -16,7 +16,7 @@ public:
 	// Sets default values for this component's properties
 	UTraceForwardComponent();
 
-	void TraceForward(FVector Loc, FRotator Rot, bool& bHitByChannel, FHitResult& Hit);
+	void TraceForward(FVector Loc, FRotator Rot, FHitResult& Hit, bool& bHitByChannel);
 
 protected:
 	// Called when the game starts

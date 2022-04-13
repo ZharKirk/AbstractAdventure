@@ -18,7 +18,7 @@ void UTraceForwardComponent::BeginPlay()
 }
 
 
-void UTraceForwardComponent::TraceForward(FVector Loc, FRotator Rot, bool& bHitByChannel, FHitResult& Hit)
+void UTraceForwardComponent::TraceForward(FVector Loc, FRotator Rot, FHitResult& Hit, bool& bHitByChannel)
 {
 	FVector Start = Loc;
 	FVector End = Start + (Rot.Vector() * TraceDistance);

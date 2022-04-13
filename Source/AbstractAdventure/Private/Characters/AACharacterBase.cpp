@@ -31,6 +31,10 @@ AAACharacterBase::AAACharacterBase()
 	ItemInteractionComponent = Cast<AItemInteraction>(GetComponentByClass(AItemInteraction::StaticClass()));
 
 	TraceForwardComponent = nullptr;
+	CurrentStationaryActor = nullptr;
+	CurrentInteractableActor = nullptr;
+
+	bPlayerHoldingItem = false;
 
 	BaseTurnRate = 45.0F;
 	BaseLookUpAtRate = 45.0F;
@@ -87,19 +91,60 @@ void AAACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 void AAACharacterBase::InteractPressed() // "E" - to interact with object
 {
+	FVector Loc;
+	FRotator Rot;
+	FHitResult Hit;
+	bool bHitByChannel = false;
+	GetController()->GetPlayerViewPoint(Loc, Rot);
+
 	TraceForwardComponent = Cast<UTraceForwardComponent>(GetComponentByClass(UTraceForwardComponent::StaticClass()));
 
-	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	if (TraceForwardComponent)
 	{
-		APlayerController* PlayerController = Cast<APlayerController>(*Iterator);
+		TraceForwardComponent->TraceForward(Loc, Rot, Hit, bHitByChannel);
+	}
+	else
+	{
+		return;
+	}
 
-		if (PlayerController && TraceForwardComponent)
+	if (!bPlayerHoldingItem) // if Interactable Actor
+	{
+		if (bHitByChannel)
 		{
-			ItemInteractionComponent->GetInteractableTypeItem(PlayerController, TraceForwardComponent);
-			//ItemInteractionComponent->SetPickupItemState(this, ForwardVector);
-			//ItemInteractionComponent->ToggleStationaryItem();
+			if (Hit.GetActor()->GetClass()->IsChildOf(ABaseInteractableActor::StaticClass()))
+			{
+				CurrentInteractableActor = Cast<ABaseInteractableActor>(Hit.GetActor());
+			}
+			else
+			{
+				CurrentInteractableActor = NULL;
+			}
 		}
-	}	
+		else
+		{
+			CurrentInteractableActor = NULL;
+		}
+	}
+
+	if (bHitByChannel) // if Stationary Actor
+	{
+		if (Hit.GetActor()->GetClass()->IsChildOf(ABaseInteractableActor::StaticClass()))
+		{
+			CurrentStationaryActor = Cast<ABaseInteractableActor>(Hit.GetActor());
+		}
+		else
+		{
+			CurrentStationaryActor = NULL;
+		}
+	}
+	else
+	{
+		CurrentStationaryActor = NULL;
+	}
+
+	//ItemInteractionComponent->SetPickupItemState(this, ForwardVector);
+	//ItemInteractionComponent->ToggleStationaryItem();
 }
 
 

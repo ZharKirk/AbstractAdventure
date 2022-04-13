@@ -19,15 +19,7 @@ class ABSTRACTADVENTURE_API AItemInteraction : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AItemInteraction();
-
-	UPROPERTY(EditAnywhere)
-	ABaseInteractableActor* CurrentInteractableActor;
-
-	UPROPERTY(EditAnywhere)
-	ABaseInteractableActor* CurrentStationaryActor;
-
 	
-	void GetInteractableTypeItem(APlayerController* PController, UTraceForwardComponent* TraceForwardComponent);
 	void SetPickupItemState(AAACharacterBase* Player, FVector ForwardVector);
 	void AttachItem(AAACharacterBase* Player, FVector ForwardVector, TArray<UStaticMeshComponent*>& Components, bool bItemGravity, bool bItemHolding);
 	void UsePickupItem();
@@ -36,8 +28,6 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-	bool bPlayerHoldingItem;
 
 public:	
 	// Called every frame

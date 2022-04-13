@@ -24,6 +24,12 @@ public:
 	// Sets default values for this character's properties
 	AAACharacterBase();
 
+	UPROPERTY(EditAnywhere)
+	ABaseInteractableActor* CurrentInteractableActor;
+
+	UPROPERTY(EditAnywhere)
+	ABaseInteractableActor* CurrentStationaryActor;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* CameraComp;
 
@@ -36,6 +42,8 @@ public:
 	AItemInteraction* ItemInteractionComponent;
 
 	UTraceForwardComponent* TraceForwardComponent;
+
+	bool bPlayerHoldingItem;
 
 protected:
 	void InteractPressed();
