@@ -28,8 +28,6 @@ AAACharacterBase::AAACharacterBase()
 	ItemHoldingComponent = CreateDefaultSubobject<USceneComponent>(TEXT("ItemHoldingComponent"));
 	ItemHoldingComponent->SetupAttachment(CameraComp);
 
-	ItemInteractionComponent = Cast<AItemInteraction>(GetComponentByClass(AItemInteraction::StaticClass()));
-
 	TraceForwardComponent = nullptr;
 	CurrentStationaryActor = nullptr;
 	CurrentInteractableActor = nullptr;
@@ -38,7 +36,6 @@ AAACharacterBase::AAACharacterBase()
 
 	BaseTurnRate = 45.0F;
 	BaseLookUpAtRate = 45.0F;
-	ForwardVector = CameraComp->GetForwardVector();
 }
 
 
@@ -91,23 +88,22 @@ void AAACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 void AAACharacterBase::InteractPressed() // "E" - to interact with object
 {
-	FVector Loc;
-	FRotator Rot;
-	FHitResult Hit;
-	bool bHitByChannel = false;
-	GetController()->GetPlayerViewPoint(Loc, Rot);
+	TraceForwardComponentInitialization();
+	GetItemType();
+	SetPickupItemState();
+	ToggleStationaryItem();
+}
 
-	TraceForwardComponent = Cast<UTraceForwardComponent>(GetComponentByClass(UTraceForwardComponent::StaticClass()));
 
-	if (TraceForwardComponent)
-	{
-		TraceForwardComponent->TraceForward(Loc, Rot, Hit, bHitByChannel);
-	}
-	else
-	{
-		return;
-	}
+void AAACharacterBase::ActionPressed() // "LMB" - to use what equiped
+{
+	UsePickupItem();
+}
 
+
+/// Item Interaction ///
+void AAACharacterBase::GetItemType()
+{
 	if (!bPlayerHoldingItem) // if Interactable Actor
 	{
 		if (bHitByChannel)
@@ -142,13 +138,125 @@ void AAACharacterBase::InteractPressed() // "E" - to interact with object
 	{
 		CurrentStationaryActor = NULL;
 	}
-
-	//ItemInteractionComponent->SetPickupItemState(this, ForwardVector);
-	//ItemInteractionComponent->ToggleStationaryItem();
 }
 
 
-void AAACharacterBase::ActionPressed() // "LMB" - to use what equiped
+void AAACharacterBase::SetPickupItemState()
 {
-	//ItemInteractionComponent->UsePickupItem();
+	if (CurrentInteractableActor)
+	{
+		if (CurrentInteractableActor->bCanBePickedUp)
+		{
+			bPlayerHoldingItem = !bPlayerHoldingItem; // set to NOT (current state)
+
+			TArray<UStaticMeshComponent*> Components;
+			CurrentInteractableActor->GetComponents<UStaticMeshComponent>(Components);
+
+			bool bItemHolding = CurrentInteractableActor->bHolding; // get state from current object
+			bool bItemGravity = CurrentInteractableActor->bGravity; // get state from current object
+
+			bItemHolding = !bItemHolding; // set to NOT (current state)
+			CurrentInteractableActor->bHolding = bItemHolding;
+
+			bItemGravity = !bItemGravity; // set to NOT (current state)
+			CurrentInteractableActor->bGravity = bItemGravity;
+
+			AttachItem(Components, bItemGravity, bItemHolding);
+		}
+		if (!bPlayerHoldingItem)
+		{
+			CurrentInteractableActor = NULL;
+		}
+	}
+}
+
+
+void AAACharacterBase::ToggleStationaryItem()
+{
+	if (CurrentStationaryActor)
+	{
+		if (CurrentStationaryActor->bStationary)
+		{
+			CurrentStationaryActor->Toggle();
+		}
+	}
+}
+
+
+void AAACharacterBase::TraceForwardComponentInitialization()
+{
+	TraceForwardComponent = Cast<UTraceForwardComponent>(GetComponentByClass(UTraceForwardComponent::StaticClass()));
+	GetController()->GetPlayerViewPoint(Loc, Rot);
+	bHitByChannel = false;
+	Hit.Init();
+
+	if (TraceForwardComponent)
+	{
+		TraceForwardComponent->TraceForward(Loc, Rot, Hit, bHitByChannel);
+
+		//if (Hit.IsValidBlockingHit())
+		//{
+		//	UE_LOG(LogTemp, Warning, TEXT("Hit Actor - %s"), *Hit.GetActor()->GetName());
+		//}
+		//else
+		//{
+		//	UE_LOG(LogTemp, Error, TEXT("Hit.IsValidBlockingHit() - false"));
+		//	return;
+		//}		
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("TraceForward Component Initialization failed!"));
+		return;
+	}
+}
+
+
+void AAACharacterBase::AttachItem(TArray<UStaticMeshComponent*>& Components, bool bItemGravity, bool bItemHolding)
+{
+	UStaticMeshComponent* ItemMeshComponent;
+
+	ForwardVector = CameraComp->GetForwardVector();
+
+	for (UStaticMeshComponent* MeshComponent : Components)
+	{
+		if (MeshComponent->GetName() == "ItemMeshComponent")
+		{
+			ItemMeshComponent = MeshComponent;
+
+			ItemMeshComponent->SetEnableGravity(bItemGravity);
+			ItemMeshComponent->SetSimulatePhysics(bItemHolding ? false : true);
+			ItemMeshComponent->SetCollisionEnabled(bItemHolding ? ECollisionEnabled::NoCollision : ECollisionEnabled::QueryAndPhysics);
+
+			if (bItemHolding)
+			{
+				ItemMeshComponent->AttachToComponent(ItemHoldingComponent, FAttachmentTransformRules::KeepWorldTransform);
+
+				// Holding Item Orientation
+				if (CurrentInteractableActor->bCanBePickedUp && CurrentInteractableActor->bCanBeUsedPickedUp)
+				{
+					ItemMeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+					ItemMeshComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
+				}
+				else
+				{
+					SetActorLocation(ItemHoldingComponent->GetComponentLocation());
+				}
+			}
+			else
+			{
+				ItemMeshComponent->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+				ItemMeshComponent->AddForce(ForwardVector * DetachThrowForce * ItemMeshComponent->GetMass());
+			}
+		}
+	}
+}
+
+
+void AAACharacterBase::UsePickupItem()
+{
+	if (bPlayerHoldingItem)
+	{
+		CurrentInteractableActor->UseItem();
+	}
 }

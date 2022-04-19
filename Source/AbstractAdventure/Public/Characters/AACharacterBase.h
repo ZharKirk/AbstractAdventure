@@ -45,6 +45,19 @@ public:
 
 	bool bPlayerHoldingItem;
 
+	void TraceForwardComponentInitialization();
+
+	void GetItemType();
+	void SetPickupItemState();
+	void AttachItem(TArray<UStaticMeshComponent*>& Components, bool bItemGravity, bool bItemHolding);
+	void UsePickupItem();
+	void ToggleStationaryItem();
+
+	FVector Loc;
+	FRotator Rot;
+	FHitResult Hit;
+	bool bHitByChannel;
+
 protected:
 	void InteractPressed();
 	void ActionPressed();
@@ -58,6 +71,8 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	float BaseLookUpAtRate;
+
+	int32 DetachThrowForce = 100000;
 
 public:
 	// Called to bind functionality to input
