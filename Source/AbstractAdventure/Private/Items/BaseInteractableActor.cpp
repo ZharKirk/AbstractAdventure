@@ -56,8 +56,6 @@ void ABaseInteractableActor::BeginPlay()
 	SetBaseDynamicMaterial();
 
 	if (ItemFXComponent) { ItemFXComponent->Deactivate(); } // Maybe there is a better way ...
-
-
 }
 
 
