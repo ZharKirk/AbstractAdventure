@@ -18,6 +18,10 @@ ABaseInteractableActor::ABaseInteractableActor()
 	ItemMeshComp->SetupAttachment(RootComponent);
 	RootComponent = ItemMeshComp;
 
+	BrokenMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BrokenMeshComponent"));
+	BrokenMeshComp->SetupAttachment(RootComponent);
+	RootComponent = BrokenMeshComp;
+
 	ItemCollisionComp = CreateDefaultSubobject<UBoxComponent>(TEXT("ItemCollisionComponent"));
 	ItemCollisionComp->SetCollisionProfileName(TEXT("Trigger"));
 	ItemCollisionComp->SetupAttachment(RootComponent);
@@ -104,12 +108,14 @@ void ABaseInteractableActor::UseItem() // TODO Rewrite this
 	{
 		if (ChargesAmount)
 		{
+			bCharged = true;
 			if (ItemFXComponent) { ItemFXComponent->ResetSystem(); } // Maybe there is a better way ...
 			ChargesAmount -= 1;
-			UE_LOG(LogTemp, Warning, TEXT("%i"), ChargesAmount);
+			UE_LOG(LogTemp, Warning, TEXT("charges: %i"), ChargesAmount);
 		}
 		else
 		{
+			bCharged = false;
 			UE_LOG(LogTemp, Warning, TEXT("No charges left!"));
 		}
 	}
@@ -118,8 +124,11 @@ void ABaseInteractableActor::UseItem() // TODO Rewrite this
 
 void ABaseInteractableActor::Toggle()
 {
-	bToggled = !bToggled; // set to NOT (current state)
-	ContactReferencedItemActor();
+	if(!bBroken)
+	{ 
+		bToggled = !bToggled; // set to NOT (current state)
+		ContactReferencedItemActor();
+	}
 }
 
 

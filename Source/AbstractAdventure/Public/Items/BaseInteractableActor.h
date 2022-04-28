@@ -24,6 +24,9 @@ public:
 	UStaticMeshComponent* ItemMeshComp;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemParameters")
+	UStaticMeshComponent* BrokenMeshComp;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemParameters")
 	UBoxComponent* ItemCollisionComp;
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "ItemParameters")
@@ -50,25 +53,25 @@ private:
 	UMaterialInstanceDynamic* ItemBaseDynamicMaterial;
 	
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ItemStates")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemStates")
 	bool bBroken;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ItemStates")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemStates")
 	bool bCharged;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ItemStates")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemStates")
 	bool bToggled;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ItemStates")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemStates")
 	bool bCanBePickedUp;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ItemStates")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemStates")
 	bool bCanBeUsedPickedUp;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ItemStates")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemStates")
 	bool bStationary;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ItemParameters")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemParameters")
 	int32 ChargesAmount;
 
 	bool bHolding;
