@@ -6,6 +6,7 @@
 #include "Characters/ItemInteraction.h"
 #include "Items/BaseInteractableActor.h"
 //
+#include "Kismet/GameplayStatics.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Controller.h"
@@ -16,8 +17,7 @@
 // Sets default values
 AAACharacterBase::AAACharacterBase()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComp"));
 	CameraComp->SetupAttachment(RootComponent);
@@ -34,8 +34,14 @@ AAACharacterBase::AAACharacterBase()
 
 	bPlayerHoldingItem = false;
 
-	BaseTurnRate = 45.0F;
+	BaseTurnRate = 45.0F; 
 	BaseLookUpAtRate = 45.0F;
+}
+
+
+void AAACharacterBase::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
 }
 
 
@@ -152,14 +158,14 @@ void AAACharacterBase::SetPickupItemState()
 			TArray<UStaticMeshComponent*> Components;
 			CurrentInteractableActor->GetComponents<UStaticMeshComponent>(Components);
 
+			// TODO Probably should move this inside AttachItem function
 			bool bItemHolding = CurrentInteractableActor->bHolding; // get state from current object
 			bool bItemGravity = CurrentInteractableActor->bGravity; // get state from current object
-
 			bItemHolding = !bItemHolding; // set to NOT (current state)
 			CurrentInteractableActor->bHolding = bItemHolding;
-
 			bItemGravity = !bItemGravity; // set to NOT (current state)
 			CurrentInteractableActor->bGravity = bItemGravity;
+			// TODO Probably should move this inside AttachItem function
 
 			AttachItem(Components, bItemGravity, bItemHolding);
 		}
@@ -193,16 +199,6 @@ void AAACharacterBase::TraceForwardComponentInitialization()
 	if (TraceForwardComponent)
 	{
 		TraceForwardComponent->TraceForward(Loc, Rot, Hit, bHitByChannel);
-
-		//if (Hit.IsValidBlockingHit())
-		//{
-		//	UE_LOG(LogTemp, Warning, TEXT("Hit Actor - %s"), *Hit.GetActor()->GetName());
-		//}
-		//else
-		//{
-		//	UE_LOG(LogTemp, Error, TEXT("Hit.IsValidBlockingHit() - false"));
-		//	return;
-		//}		
 	}
 	else
 	{
@@ -231,23 +227,19 @@ void AAACharacterBase::AttachItem(TArray<UStaticMeshComponent*>& Components, boo
 			if (bItemHolding)
 			{
 				ItemMeshComponent->AttachToComponent(ItemHoldingComponent, FAttachmentTransformRules::KeepWorldTransform);
-
-				// Holding Item Orientation
-				if (CurrentInteractableActor->bCanBePickedUp && CurrentInteractableActor->bCanBeUsedPickedUp)
-				{
-					ItemMeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-					ItemMeshComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
-				}
-				else
-				{
-					SetActorLocation(ItemHoldingComponent->GetComponentLocation());
-				}
+				ItemMeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+				ItemMeshComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
+				SetActorLocation(ItemHoldingComponent->GetComponentLocation());
 			}
 			else
 			{
 				ItemMeshComponent->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 				ItemMeshComponent->AddForce(ForwardVector * DetachThrowForce * ItemMeshComponent->GetMass());
 			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("No components in item match 'ItemMeshComponent' name to attach!"));
 		}
 	}
 }
@@ -258,5 +250,21 @@ void AAACharacterBase::UsePickupItem()
 	if (bPlayerHoldingItem)
 	{
 		CurrentInteractableActor->UseItem();
+
+		//if (CurrentInteractableActor->bRepairItem)
+		//{
+		//	RepairItem();
+		//}		
 	}
 }
+
+
+//void AAACharacterBase::RepairItem()
+//{
+	//player holding "repair item" (bRepairItem)
+	//UE_LOG(LogTemp, Warning, TEXT("RepairItem!"));
+	//player aim hit on this broken item (CurrentStationaryActor)
+	//player holding LMB input for 5 sec (if (GetWorld()->GetFirstPlayerController()->GetInputKeyTimeDown(FKey("LeftMouseButton")) >= 5.0f))
+	//repair this broken item (bBroken = false;)
+	//and change all broken states to fixed (SetItemCondition();)
+//}

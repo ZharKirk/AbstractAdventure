@@ -24,6 +24,8 @@ public:
 	// Sets default values for this character's properties
 	AAACharacterBase();
 
+	virtual void Tick(float DeltaTime) override;
+
 	UPROPERTY(EditAnywhere)
 	ABaseInteractableActor* CurrentInteractableActor;
 
@@ -52,6 +54,7 @@ public:
 	void AttachItem(TArray<UStaticMeshComponent*>& Components, bool bItemGravity, bool bItemHolding);
 	void UsePickupItem();
 	void ToggleStationaryItem();
+	//void RepairItem();
 
 	FVector Loc;
 	FRotator Rot;
@@ -72,7 +75,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	float BaseLookUpAtRate;
 
-	int32 DetachThrowForce = 100000;
+	int32 DetachThrowForce = 40000;
 
 public:
 	// Called to bind functionality to input

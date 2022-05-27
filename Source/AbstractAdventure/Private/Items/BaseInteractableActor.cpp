@@ -20,7 +20,6 @@ ABaseInteractableActor::ABaseInteractableActor()
 
 	BrokenMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BrokenMeshComponent"));
 	BrokenMeshComp->SetupAttachment(RootComponent);
-	RootComponent = BrokenMeshComp;
 
 	ItemCollisionComp = CreateDefaultSubobject<UBoxComponent>(TEXT("ItemCollisionComponent"));
 	ItemCollisionComp->SetCollisionProfileName(TEXT("Trigger"));
@@ -40,6 +39,7 @@ ABaseInteractableActor::ABaseInteractableActor()
 	bCanBePickedUp = false;
 	bCanBeUsedPickedUp = false;
 	bStationary = false;
+	bRepairItem = false;
 
 	bHolding = false;
 	bGravity = true;
@@ -57,7 +57,10 @@ void ABaseInteractableActor::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// TODO add check if all selected states and booleans are compatible
+
 	SetBaseDynamicMaterial();
+	SetItemCondition();
 
 	if (ItemFXComponent) { ItemFXComponent->Deactivate(); } // Maybe there is a better way ...
 }
@@ -69,6 +72,22 @@ void ABaseInteractableActor::SetBaseDynamicMaterial()
 	UMaterialInterface* BaseItemMaterial = ItemMeshComp->GetMaterial(BaseMaterialIndex);
 	ItemBaseDynamicMaterial = UMaterialInstanceDynamic::Create(BaseItemMaterial, NULL);
 	ItemMeshComp->SetMaterial(BaseMaterialIndex, ItemBaseDynamicMaterial);
+}
+
+
+void ABaseInteractableActor::SetItemCondition()
+{
+	// TODO set all conditions here (charged, broken etc.)
+	if (bBroken)
+	{
+		BrokenMeshComp->SetHiddenInGame(false);
+		ItemMeshComp->SetHiddenInGame(true);
+	}
+	else
+	{
+		ItemMeshComp->SetHiddenInGame(false);
+		BrokenMeshComp->SetHiddenInGame(true);
+	}
 }
 
 
@@ -88,18 +107,18 @@ void ABaseInteractableActor::SwitchMaterial()
 }
 
 
-float ABaseInteractableActor::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
-{
-	Health -= DefaultHealth;
-	UE_LOG(LogTemp, Log, TEXT("Health: %f"), Health);
-
-	if (Health <= 0)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Health depleted!"));
-	}
-
-	return DamageAmount;
-}
+//float ABaseInteractableActor::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+//{
+//	Health -= DefaultHealth;
+//	UE_LOG(LogTemp, Log, TEXT("Health: %f"), Health);
+//
+//	if (Health <= 0)
+//	{
+//		UE_LOG(LogTemp, Warning, TEXT("Health depleted!"));
+//	}
+//
+//	return DamageAmount;
+//}
 
 
 void ABaseInteractableActor::UseItem() // TODO Rewrite this
@@ -130,6 +149,17 @@ void ABaseInteractableActor::Toggle()
 		ContactReferencedItemActor();
 	}
 }
+
+
+//void ABaseInteractableActor::RepairItem()
+//{
+	//player holding "repair item" (bRepairItem)
+	//UE_LOG(LogTemp, Warning, TEXT("RepairItem!"));
+	//player aim on this broken item (CurrentStationaryActor)
+	//player holding LMB input for 5 sec (if (GetWorld()->GetFirstPlayerController()->GetInputKeyTimeDown(FKey("LeftMouseButton")) >= 5.0f))
+	//repair this broken item (bBroken = false;)
+	//and change all broken states to fixed (SetItemCondition();)
+//}
 
 
 void ABaseInteractableActor::ContactReferencedItemActor()

@@ -43,41 +43,46 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
-
-	float Health;
-	float DefaultHealth;
+	//virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	void SetBaseDynamicMaterial();
 
+	void SetItemCondition();
+
 	UMaterialInstanceDynamic* ItemBaseDynamicMaterial;
+
+	float Health;
+
+	float DefaultHealth;
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemStates")
 	bool bBroken;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemStates")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemStates")
 	bool bCharged;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemStates")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemStates")
 	bool bToggled;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemStates")
-	bool bCanBePickedUp;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemStates")
-	bool bCanBeUsedPickedUp;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemStates")
-	bool bStationary;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemParameters")
 	int32 ChargesAmount;
 
-	bool bHolding;
-	bool bGravity;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemProperties")
+	bool bCanBePickedUp;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemProperties")
+	bool bCanBeUsedPickedUp;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemProperties")
+	bool bStationary;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemProperties")
+	bool bRepairItem;
 
 	void UseItem();
+
+	//void RepairItem();
 
 	void Toggle();
 
@@ -86,4 +91,8 @@ public:
 	void ContactReferencedItemActor();
 
 	AActor* GetLoadedActor();
+
+	bool bHolding;
+
+	bool bGravity;
 };
