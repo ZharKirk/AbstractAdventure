@@ -33,6 +33,7 @@ AAACharacterBase::AAACharacterBase()
 	CurrentInteractableActor = nullptr;
 
 	bPlayerHoldingItem = false;
+	bPlayerButtonPressed = false;
 
 	BaseTurnRate = 45.0F; 
 	BaseLookUpAtRate = 45.0F;
@@ -42,6 +43,13 @@ AAACharacterBase::AAACharacterBase()
 void AAACharacterBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (GetWorld()->GetFirstPlayerController()->GetInputKeyTimeDown(FKey("LeftMouseButton")) >= 5.0f && bPlayerButtonPressed)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%f"), GetWorld()->GetFirstPlayerController()->GetInputKeyTimeDown(FKey("LeftMouseButton")));
+		RepairStationaryActor();
+		bPlayerButtonPressed = false;
+	}
 }
 
 
@@ -189,25 +197,6 @@ void AAACharacterBase::ToggleStationaryItem()
 }
 
 
-void AAACharacterBase::TraceForwardComponentInitialization()
-{
-	TraceForwardComponent = Cast<UTraceForwardComponent>(GetComponentByClass(UTraceForwardComponent::StaticClass()));
-	GetController()->GetPlayerViewPoint(Loc, Rot);
-	bHitByChannel = false;
-	Hit.Init();
-
-	if (TraceForwardComponent)
-	{
-		TraceForwardComponent->TraceForward(Loc, Rot, Hit, bHitByChannel);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("TraceForward Component Initialization failed!"));
-		return;
-	}
-}
-
-
 void AAACharacterBase::AttachItem(TArray<UStaticMeshComponent*>& Components, bool bItemGravity, bool bItemHolding)
 {
 	UStaticMeshComponent* ItemMeshComponent;
@@ -249,22 +238,47 @@ void AAACharacterBase::UsePickupItem()
 {
 	if (bPlayerHoldingItem)
 	{
-		CurrentInteractableActor->UseItem();
-
-		//if (CurrentInteractableActor->bRepairItem)
-		//{
-		//	RepairItem();
-		//}		
+		if (CurrentInteractableActor->bRepairItem)
+		{
+			CurrentInteractableActor->UseItem();
+			bPlayerButtonPressed = true;
+		}
+		else
+		{
+			CurrentInteractableActor->UseItem();
+		}		
 	}
 }
 
 
-//void AAACharacterBase::RepairItem()
-//{
-	//player holding "repair item" (bRepairItem)
-	//UE_LOG(LogTemp, Warning, TEXT("RepairItem!"));
-	//player aim hit on this broken item (CurrentStationaryActor)
-	//player holding LMB input for 5 sec (if (GetWorld()->GetFirstPlayerController()->GetInputKeyTimeDown(FKey("LeftMouseButton")) >= 5.0f))
-	//repair this broken item (bBroken = false;)
-	//and change all broken states to fixed (SetItemCondition();)
-//}
+void AAACharacterBase::RepairStationaryActor()
+{
+	TraceForwardComponentInitialization();
+	GetItemType();
+
+	if (CurrentStationaryActor && CurrentStationaryActor->bStationary && CurrentStationaryActor->bBroken)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("RepairItem! %s"), *CurrentStationaryActor->GetName());
+		CurrentStationaryActor->bBroken = false;
+		CurrentStationaryActor->SetItemCondition();
+	}
+}
+
+
+void AAACharacterBase::TraceForwardComponentInitialization()
+{
+	TraceForwardComponent = Cast<UTraceForwardComponent>(GetComponentByClass(UTraceForwardComponent::StaticClass()));
+	GetController()->GetPlayerViewPoint(Loc, Rot);
+	bHitByChannel = false;
+	Hit.Init();
+
+	if (TraceForwardComponent)
+	{
+		TraceForwardComponent->TraceForward(Loc, Rot, Hit, bHitByChannel);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("TraceForward Component Initialization failed!"));
+		return;
+	}
+}

@@ -46,6 +46,7 @@ public:
 	UTraceForwardComponent* TraceForwardComponent;
 
 	bool bPlayerHoldingItem;
+	bool bPlayerButtonPressed;
 
 	void TraceForwardComponentInitialization();
 
@@ -54,7 +55,7 @@ public:
 	void AttachItem(TArray<UStaticMeshComponent*>& Components, bool bItemGravity, bool bItemHolding);
 	void UsePickupItem();
 	void ToggleStationaryItem();
-	//void RepairItem();
+	void RepairStationaryActor();
 
 	FVector Loc;
 	FRotator Rot;

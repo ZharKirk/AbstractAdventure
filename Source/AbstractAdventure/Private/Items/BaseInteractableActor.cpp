@@ -85,6 +85,7 @@ void ABaseInteractableActor::SetItemCondition()
 	}
 	else
 	{
+		PlayFX();
 		ItemMeshComp->SetHiddenInGame(false);
 		BrokenMeshComp->SetHiddenInGame(true);
 	}
@@ -128,13 +129,17 @@ void ABaseInteractableActor::UseItem() // TODO Rewrite this
 		if (ChargesAmount)
 		{
 			bCharged = true;
-			if (ItemFXComponent) { ItemFXComponent->ResetSystem(); } // Maybe there is a better way ...
-			ChargesAmount -= 1;
+
+			PlayFX();
+
+			ChargesAmount--;
+
 			UE_LOG(LogTemp, Warning, TEXT("charges: %i"), ChargesAmount);
 		}
 		else
 		{
 			bCharged = false;
+
 			UE_LOG(LogTemp, Warning, TEXT("No charges left!"));
 		}
 	}
@@ -151,15 +156,15 @@ void ABaseInteractableActor::Toggle()
 }
 
 
-//void ABaseInteractableActor::RepairItem()
-//{
+void ABaseInteractableActor::RepairItem()
+{
 	//player holding "repair item" (bRepairItem)
 	//UE_LOG(LogTemp, Warning, TEXT("RepairItem!"));
 	//player aim on this broken item (CurrentStationaryActor)
 	//player holding LMB input for 5 sec (if (GetWorld()->GetFirstPlayerController()->GetInputKeyTimeDown(FKey("LeftMouseButton")) >= 5.0f))
 	//repair this broken item (bBroken = false;)
 	//and change all broken states to fixed (SetItemCondition();)
-//}
+}
 
 
 void ABaseInteractableActor::ContactReferencedItemActor()
@@ -187,4 +192,10 @@ AActor* ABaseInteractableActor::GetLoadedActor() // To get refereced actor
 		ReferencedItemActor = Cast<AActor>(Streamable.LoadSynchronous(AssetRef));
 	}
 	return ReferencedItemActor.Get();
+}
+
+
+void ABaseInteractableActor::PlayFX()
+{
+	if (ItemFXComponent) { ItemFXComponent->ResetSystem(); } // Maybe there is a better way ...
 }

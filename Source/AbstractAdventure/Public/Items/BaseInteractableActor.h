@@ -47,8 +47,6 @@ private:
 
 	void SetBaseDynamicMaterial();
 
-	void SetItemCondition();
-
 	UMaterialInstanceDynamic* ItemBaseDynamicMaterial;
 
 	float Health;
@@ -82,11 +80,15 @@ public:
 
 	void UseItem();
 
-	//void RepairItem();
+	void PlayFX();
+
+	void RepairItem();
 
 	void Toggle();
 
 	void SwitchMaterial();
+
+	void SetItemCondition();
 
 	void ContactReferencedItemActor();
 
