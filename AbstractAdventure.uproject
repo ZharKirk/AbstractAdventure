@@ -55,6 +55,10 @@
 		{
 			"Name": "UVEditor",
 			"Enabled": true
+		},
+		{
+			"Name": "HoudiniEngine",
+			"Enabled": false
 		}
 	],
 	"TargetPlatforms": [

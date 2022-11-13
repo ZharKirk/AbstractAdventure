@@ -26,29 +26,29 @@ ABaseInteractableActor::ABaseInteractableActor()
 	ItemCollisionComp->SetupAttachment(RootComponent);
 
 	ItemMuzzleLocation = CreateDefaultSubobject<USceneComponent>(TEXT("ItemMuzzleLocation"));
-	ItemMuzzleLocation->SetupAttachment(ItemMeshComp);
+	ItemMuzzleLocation->SetupAttachment(RootComponent);
 	ItemMuzzleLocation->SetRelativeLocation(FVector(0.2f, 48.4f, -10.6f));
 
 	ItemFXComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ItemEffect"));
 	ItemFXComponent->SetupAttachment(ItemMuzzleLocation);
 
-	bBroken = false;
-	bCharged = false;
 	bToggled = false;
+
+	bBroken = false;
+	bCanBeCharged = false;
+	bCharged = false;
 
 	bCanBePickedUp = false;
 	bCanBeUsedPickedUp = false;
+
 	bStationary = false;
 	bRepairItem = false;
+	bCharger = false;
 
 	bHolding = false;
 	bGravity = true;
 
-	ChargesAmount = 5;
-
-	Health = 0.0f;
-	DefaultHealth = 100.0f;
-	Health = DefaultHealth;
+	ChargesAmount = 0;
 }
 
 
@@ -57,12 +57,11 @@ void ABaseInteractableActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// TODO add check if all selected states and booleans are compatible
-
+	SetBeginItemCondition();
 	SetBaseDynamicMaterial();
-	SetItemCondition();
 
 	if (ItemFXComponent) { ItemFXComponent->Deactivate(); } // Maybe there is a better way ...
+	ItemCollisionComp->OnComponentBeginOverlap.AddDynamic(this, &ABaseInteractableActor::OnHit);
 }
 
 
@@ -75,19 +74,67 @@ void ABaseInteractableActor::SetBaseDynamicMaterial()
 }
 
 
-void ABaseInteractableActor::SetItemCondition()
+void ABaseInteractableActor::SetBeginItemCondition()
 {
-	// TODO set all conditions here (charged, broken etc.)
 	if (bBroken)
 	{
 		BrokenMeshComp->SetHiddenInGame(false);
 		ItemMeshComp->SetHiddenInGame(true);
+		bCharged = false;
+		bCanBePickedUp = false;
+		bCanBeUsedPickedUp = false;
+		bStationary = true;
+		bRepairItem = false;
+		bCharger = false;
+		//UE_LOG(LogTemp, Warning, TEXT("bBroken state switched!"));
 	}
 	else
 	{
 		PlayFX();
 		ItemMeshComp->SetHiddenInGame(false);
 		BrokenMeshComp->SetHiddenInGame(true);
+	}
+	if (bCanBeCharged)
+	{
+		bCharger = false;
+	}
+	if (bCharged)
+	{
+		ChargesAmount = 5;
+	}
+	if (bStationary)
+	{
+		bCharger = false;
+		bCanBePickedUp = false;
+		bCanBeUsedPickedUp = false;
+		//UE_LOG(LogTemp, Warning, TEXT("bStationary state switched!"));
+	}
+	if (bCanBePickedUp)
+	{
+		bStationary = false;
+		//UE_LOG(LogTemp, Warning, TEXT("bCanBePickedUp state switched!"));
+	}
+	if (bCanBeUsedPickedUp)
+	{
+		bCharger = false;
+		bStationary = false;
+		bCanBePickedUp = true;
+		//UE_LOG(LogTemp, Warning, TEXT("bCanBeUsedPickedUp state switched!"));
+	}
+	if (bCharger)
+	{
+		bStationary = false;
+		bCanBePickedUp = true;
+		bCanBeUsedPickedUp = false;
+		//UE_LOG(LogTemp, Warning, TEXT("bCharger state switched!"));
+	}
+	if (bRepairItem)
+	{
+		bCharger = false;
+		bStationary = false;
+		bCanBePickedUp = true;
+		bCanBeUsedPickedUp = true;
+		//UE_LOG(LogTemp, Warning, TEXT("bRepairItem state switched!"));
 	}
 }
 
@@ -108,20 +155,6 @@ void ABaseInteractableActor::SwitchMaterial()
 }
 
 
-//float ABaseInteractableActor::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
-//{
-//	Health -= DefaultHealth;
-//	UE_LOG(LogTemp, Log, TEXT("Health: %f"), Health);
-//
-//	if (Health <= 0)
-//	{
-//		UE_LOG(LogTemp, Warning, TEXT("Health depleted!"));
-//	}
-//
-//	return DamageAmount;
-//}
-
-
 void ABaseInteractableActor::UseItem() // TODO Rewrite this
 {
 	if (bCanBeUsedPickedUp)
@@ -134,13 +167,14 @@ void ABaseInteractableActor::UseItem() // TODO Rewrite this
 
 			ChargesAmount--;
 
-			UE_LOG(LogTemp, Warning, TEXT("charges: %i"), ChargesAmount);
-		}
-		else
-		{
-			bCharged = false;
+			if (!ChargesAmount) 
+			{
+				bCharged = false;
 
-			UE_LOG(LogTemp, Warning, TEXT("No charges left!"));
+				UE_LOG(LogTemp, Warning, TEXT("No charges left!"));
+			}
+
+			UE_LOG(LogTemp, Warning, TEXT("charges: %i"), ChargesAmount);
 		}
 	}
 }
@@ -149,21 +183,54 @@ void ABaseInteractableActor::UseItem() // TODO Rewrite this
 void ABaseInteractableActor::Toggle()
 {
 	if(!bBroken)
-	{ 
-		bToggled = !bToggled; // set to NOT (current state)
-		ContactReferencedItemActor();
+	{
+		if(bCanBeCharged)
+		{
+			if (bCharged)
+			{
+				bToggled = !bToggled; // set to NOT (current state)
+				ContactReferencedItemActor();
+			}
+		}
+		else
+		{
+			bToggled = !bToggled; // set to NOT (current state)
+			ContactReferencedItemActor();
+		}
 	}
 }
 
 
-void ABaseInteractableActor::RepairItem()
+void ABaseInteractableActor::OnHit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	//player holding "repair item" (bRepairItem)
-	//UE_LOG(LogTemp, Warning, TEXT("RepairItem!"));
-	//player aim on this broken item (CurrentStationaryActor)
-	//player holding LMB input for 5 sec (if (GetWorld()->GetFirstPlayerController()->GetInputKeyTimeDown(FKey("LeftMouseButton")) >= 5.0f))
-	//repair this broken item (bBroken = false;)
-	//and change all broken states to fixed (SetItemCondition();)
+	//UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *OtherActor->GetName());
+	Charge(OtherActor);
+}
+
+
+void ABaseInteractableActor::Charge(AActor* OtherActor)
+{
+	if (bStationary && !bBroken && !bCharged)
+	{
+		if (OtherActor)
+		{
+			ABaseInteractableActor* ChargerItem = Cast<ABaseInteractableActor>(OtherActor);
+
+			if (ChargerItem->bCharger)
+			{
+				this->bCharged = true;
+				this->ChargesAmount = 10;
+				ChargerItem->Destroy();
+				UE_LOG(LogTemp, Warning, TEXT(" %s charged %s !"), *ChargerItem->GetName(), *this->GetName());
+			}
+		}
+	}
+}
+
+
+void ABaseInteractableActor::PlayFX()
+{
+	if (ItemFXComponent) { ItemFXComponent->ResetSystem(); } // Maybe there is a better way ...
 }
 
 
@@ -173,12 +240,12 @@ void ABaseInteractableActor::ContactReferencedItemActor()
 
 	if (ResultActor)
 	{
-		ResultActor->SwitchMaterial(); // TODO delete
+		// As an example ResultActor->SwitchMaterial();
 		UE_LOG(LogTemp, Warning, TEXT("%s - respond!"), *ResultActor->GetName());
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("no Referenced Item Actor!"));
+		UE_LOG(LogTemp, Warning, TEXT("no Referenced Item Actor!"));
 	}
 }
 
@@ -192,10 +259,4 @@ AActor* ABaseInteractableActor::GetLoadedActor() // To get refereced actor
 		ReferencedItemActor = Cast<AActor>(Streamable.LoadSynchronous(AssetRef));
 	}
 	return ReferencedItemActor.Get();
-}
-
-
-void ABaseInteractableActor::PlayFX()
-{
-	if (ItemFXComponent) { ItemFXComponent->ResetSystem(); } // Maybe there is a better way ...
 }

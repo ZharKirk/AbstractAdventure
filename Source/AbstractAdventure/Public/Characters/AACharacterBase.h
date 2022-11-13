@@ -48,11 +48,15 @@ public:
 	bool bPlayerHoldingItem;
 	bool bPlayerButtonPressed;
 
+	bool bLastCharge;
+
+	void CountdownTimeButtonPressed();
+
 	void TraceForwardComponentInitialization();
 
 	void GetItemType();
 	void SetPickupItemState();
-	void AttachItem(TArray<UStaticMeshComponent*>& Components, bool bItemGravity, bool bItemHolding);
+	void AttachItem(TArray<UStaticMeshComponent*>& Components);
 	void UsePickupItem();
 	void ToggleStationaryItem();
 	void RepairStationaryActor();
@@ -64,6 +68,7 @@ public:
 
 protected:
 	void InteractPressed();
+	void DropPressed();
 	void ActionPressed();
 
 	void MoveForward(float Value);
@@ -76,6 +81,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	float BaseLookUpAtRate;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
+	float CountdownTime;
+
 	int32 DetachThrowForce = 40000;
 
 public:
@@ -83,5 +91,4 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	FVector ForwardVector;
-
 };

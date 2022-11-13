@@ -35,8 +35,12 @@ AAACharacterBase::AAACharacterBase()
 	bPlayerHoldingItem = false;
 	bPlayerButtonPressed = false;
 
+	bLastCharge = false;
+
 	BaseTurnRate = 45.0F; 
 	BaseLookUpAtRate = 45.0F;
+
+	CountdownTime = 5.0f;
 }
 
 
@@ -44,11 +48,22 @@ void AAACharacterBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (GetWorld()->GetFirstPlayerController()->GetInputKeyTimeDown(FKey("LeftMouseButton")) >= 5.0f && bPlayerButtonPressed)
+	if (bPlayerButtonPressed)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%f"), GetWorld()->GetFirstPlayerController()->GetInputKeyTimeDown(FKey("LeftMouseButton")));
+		CountdownTimeButtonPressed();
+	}
+}
+
+
+void AAACharacterBase::CountdownTimeButtonPressed()
+{
+	//UE_LOG(LogTemp, Log, TEXT("LMB Holding: %f"), (GetWorld()->GetFirstPlayerController()->GetInputKeyTimeDown(FKey("LeftMouseButton"))));
+
+	if ((GetWorld()->GetFirstPlayerController()->GetInputKeyTimeDown(FKey("LeftMouseButton")) >= CountdownTime))
+	{
 		RepairStationaryActor();
 		bPlayerButtonPressed = false;
+		bLastCharge = false;
 	}
 }
 
@@ -87,6 +102,7 @@ void AAACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AAACharacterBase::InteractPressed);
+	PlayerInputComponent->BindAction("Drop", IE_Pressed, this, &AAACharacterBase::DropPressed);
 	PlayerInputComponent->BindAction("Action", IE_Pressed, this, &AAACharacterBase::ActionPressed);
 
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
@@ -103,9 +119,17 @@ void AAACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 void AAACharacterBase::InteractPressed() // "E" - to interact with object
 {
 	TraceForwardComponentInitialization();
+
 	GetItemType();
 	SetPickupItemState();
+
 	ToggleStationaryItem();
+}
+
+
+void AAACharacterBase::DropPressed() // "G" - to drop object
+{
+	UE_LOG(LogTemp, Warning, TEXT("Drop Pressed!"));
 }
 
 
@@ -118,7 +142,8 @@ void AAACharacterBase::ActionPressed() // "LMB" - to use what equiped
 /// Item Interaction ///
 void AAACharacterBase::GetItemType()
 {
-	if (!bPlayerHoldingItem) // if Interactable Actor
+	//// if Interactable Actor ////
+	if (!bPlayerHoldingItem)
 	{
 		if (bHitByChannel)
 		{
@@ -137,7 +162,8 @@ void AAACharacterBase::GetItemType()
 		}
 	}
 
-	if (bHitByChannel) // if Stationary Actor
+	//// if Stationary Actor ////
+	if (bHitByChannel)
 	{
 		if (Hit.GetActor()->GetClass()->IsChildOf(ABaseInteractableActor::StaticClass()))
 		{
@@ -166,16 +192,7 @@ void AAACharacterBase::SetPickupItemState()
 			TArray<UStaticMeshComponent*> Components;
 			CurrentInteractableActor->GetComponents<UStaticMeshComponent>(Components);
 
-			// TODO Probably should move this inside AttachItem function
-			bool bItemHolding = CurrentInteractableActor->bHolding; // get state from current object
-			bool bItemGravity = CurrentInteractableActor->bGravity; // get state from current object
-			bItemHolding = !bItemHolding; // set to NOT (current state)
-			CurrentInteractableActor->bHolding = bItemHolding;
-			bItemGravity = !bItemGravity; // set to NOT (current state)
-			CurrentInteractableActor->bGravity = bItemGravity;
-			// TODO Probably should move this inside AttachItem function
-
-			AttachItem(Components, bItemGravity, bItemHolding);
+			AttachItem(Components);
 		}
 		if (!bPlayerHoldingItem)
 		{
@@ -185,20 +202,15 @@ void AAACharacterBase::SetPickupItemState()
 }
 
 
-void AAACharacterBase::ToggleStationaryItem()
+void AAACharacterBase::AttachItem(TArray<UStaticMeshComponent*>& Components)
 {
-	if (CurrentStationaryActor)
-	{
-		if (CurrentStationaryActor->bStationary)
-		{
-			CurrentStationaryActor->Toggle();
-		}
-	}
-}
+	bool bItemHolding = CurrentInteractableActor->bHolding; // get state from current object
+	bool bItemGravity = CurrentInteractableActor->bGravity; // get state from current object
+	bItemHolding = !bItemHolding; // set to NOT (current state)
+	CurrentInteractableActor->bHolding = bItemHolding;
+	bItemGravity = !bItemGravity; // set to NOT (current state)
+	CurrentInteractableActor->bGravity = bItemGravity;
 
-
-void AAACharacterBase::AttachItem(TArray<UStaticMeshComponent*>& Components, bool bItemGravity, bool bItemHolding)
-{
 	UStaticMeshComponent* ItemMeshComponent;
 
 	ForwardVector = CameraComp->GetForwardVector();
@@ -226,9 +238,17 @@ void AAACharacterBase::AttachItem(TArray<UStaticMeshComponent*>& Components, boo
 				ItemMeshComponent->AddForce(ForwardVector * DetachThrowForce * ItemMeshComponent->GetMass());
 			}
 		}
-		else
+	}
+}
+
+
+void AAACharacterBase::ToggleStationaryItem()
+{
+	if (CurrentStationaryActor)
+	{
+		if (CurrentStationaryActor->bStationary)
 		{
-			UE_LOG(LogTemp, Error, TEXT("No components in item match 'ItemMeshComponent' name to attach!"));
+			CurrentStationaryActor->Toggle();
 		}
 	}
 }
@@ -238,29 +258,29 @@ void AAACharacterBase::UsePickupItem()
 {
 	if (bPlayerHoldingItem)
 	{
-		if (CurrentInteractableActor->bRepairItem)
+		bPlayerButtonPressed = true;
+
+		if (CurrentInteractableActor->bCharged)
 		{
+			bLastCharge = true;
 			CurrentInteractableActor->UseItem();
-			bPlayerButtonPressed = true;
 		}
-		else
-		{
-			CurrentInteractableActor->UseItem();
-		}		
 	}
 }
 
 
-void AAACharacterBase::RepairStationaryActor()
+void AAACharacterBase::RepairStationaryActor() // TODO fix bCharged amount
 {
 	TraceForwardComponentInitialization();
 	GetItemType();
 
 	if (CurrentStationaryActor && CurrentStationaryActor->bStationary && CurrentStationaryActor->bBroken)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("RepairItem! %s"), *CurrentStationaryActor->GetName());
-		CurrentStationaryActor->bBroken = false;
-		CurrentStationaryActor->SetItemCondition();
+		if (bLastCharge)
+		{
+			CurrentStationaryActor->bBroken = false;
+			CurrentStationaryActor->SetBeginItemCondition();
+		}
 	}
 }
 

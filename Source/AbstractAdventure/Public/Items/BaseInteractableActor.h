@@ -43,15 +43,12 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	//virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
-
 	void SetBaseDynamicMaterial();
 
 	UMaterialInstanceDynamic* ItemBaseDynamicMaterial;
 
-	float Health;
-
-	float DefaultHealth;
+	UFUNCTION()
+	void OnHit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemStates")
@@ -63,8 +60,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemStates")
 	bool bToggled;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemParameters")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemProperties")
 	int32 ChargesAmount;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemProperties")
+	bool bCanBeCharged;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemProperties")
 	bool bCanBePickedUp;
@@ -76,19 +76,22 @@ public:
 	bool bStationary;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemProperties")
+	bool bCharger;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemProperties")
 	bool bRepairItem;
 
 	void UseItem();
 
-	void PlayFX();
+	void Charge(AActor* OtherActor);
 
-	void RepairItem();
+	void PlayFX();
 
 	void Toggle();
 
 	void SwitchMaterial();
 
-	void SetItemCondition();
+	void SetBeginItemCondition();
 
 	void ContactReferencedItemActor();
 
