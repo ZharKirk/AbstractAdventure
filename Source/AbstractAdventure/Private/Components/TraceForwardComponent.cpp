@@ -7,7 +7,7 @@
 // Sets default values for this component's properties
 UTraceForwardComponent::UTraceForwardComponent()
 {
-	TraceDistance = 500;
+	TraceDistance = 250;
 }
 
 

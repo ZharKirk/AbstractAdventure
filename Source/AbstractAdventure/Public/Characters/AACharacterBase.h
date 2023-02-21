@@ -12,7 +12,7 @@ class UStaticMeshComponent;
 class USceneComponent;
 class ABaseInteractableActor;
 class UTraceForwardComponent;
-class AItemInteraction;
+class UPlayerInventory;
 
 
 UCLASS()
@@ -30,7 +30,10 @@ public:
 	ABaseInteractableActor* CurrentInteractableActor;
 
 	UPROPERTY(EditAnywhere)
-	ABaseInteractableActor* CurrentStationaryActor;
+	ABaseInteractableActor* CurrentHoldingActor;
+
+	UPROPERTY(EditAnywhere)
+	UPlayerInventory* Inventory;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* CameraComp;
@@ -41,12 +44,11 @@ public:
 	UPROPERTY(EditAnywhere)
 	USceneComponent* ItemHoldingComponent;
 
-	AItemInteraction* ItemInteractionComponent;
-
 	UTraceForwardComponent* TraceForwardComponent;
 
 	bool bPlayerHoldingItem;
-	bool bPlayerButtonPressed;
+
+	bool bPlayerActionButtonPressed;
 
 	bool bLastCharge;
 
@@ -54,9 +56,10 @@ public:
 
 	void TraceForwardComponentInitialization();
 
-	void GetItemType();
+	void GetItem();
 	void SetPickupItemState();
-	void AttachItem(TArray<UStaticMeshComponent*>& Components);
+	void ReloadItem();
+	void AttachItem(TArray<USkeletalMeshComponent*>& Components);
 	void UsePickupItem();
 	void ToggleStationaryItem();
 	void RepairStationaryActor();
@@ -70,6 +73,7 @@ protected:
 	void InteractPressed();
 	void DropPressed();
 	void ActionPressed();
+	void AimDownSights();
 
 	void MoveForward(float Value);
 	void MoveRight(float Value);

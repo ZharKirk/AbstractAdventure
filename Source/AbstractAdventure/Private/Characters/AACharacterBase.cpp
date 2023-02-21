@@ -3,8 +3,8 @@
 
 #include "Characters/AACharacterBase.h"
 #include "Components/TraceForwardComponent.h"
-#include "Characters/ItemInteraction.h"
 #include "Items/BaseInteractableActor.h"
+#include "PlayerInventory.h"
 //
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraComponent.h"
@@ -29,11 +29,12 @@ AAACharacterBase::AAACharacterBase()
 	ItemHoldingComponent->SetupAttachment(CameraComp);
 
 	TraceForwardComponent = nullptr;
-	CurrentStationaryActor = nullptr;
+	Inventory = nullptr;
 	CurrentInteractableActor = nullptr;
+	CurrentHoldingActor = nullptr;
 
 	bPlayerHoldingItem = false;
-	bPlayerButtonPressed = false;
+	bPlayerActionButtonPressed = false;
 
 	bLastCharge = false;
 
@@ -48,21 +49,20 @@ void AAACharacterBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (bPlayerButtonPressed)
+	if (bPlayerActionButtonPressed)
 	{
 		CountdownTimeButtonPressed();
 	}
+	AimDownSights();
 }
 
 
 void AAACharacterBase::CountdownTimeButtonPressed()
 {
-	//UE_LOG(LogTemp, Log, TEXT("LMB Holding: %f"), (GetWorld()->GetFirstPlayerController()->GetInputKeyTimeDown(FKey("LeftMouseButton"))));
-
 	if ((GetWorld()->GetFirstPlayerController()->GetInputKeyTimeDown(FKey("LeftMouseButton")) >= CountdownTime))
 	{
 		RepairStationaryActor();
-		bPlayerButtonPressed = false;
+		bPlayerActionButtonPressed = false;
 		bLastCharge = false;
 	}
 }
@@ -104,6 +104,8 @@ void AAACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AAACharacterBase::InteractPressed);
 	PlayerInputComponent->BindAction("Drop", IE_Pressed, this, &AAACharacterBase::DropPressed);
 	PlayerInputComponent->BindAction("Action", IE_Pressed, this, &AAACharacterBase::ActionPressed);
+	PlayerInputComponent->BindAction("WeaponAim", IE_Pressed, this, &AAACharacterBase::AimDownSights);
+	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &AAACharacterBase::ReloadItem);
 
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
@@ -120,8 +122,17 @@ void AAACharacterBase::InteractPressed() // "E" - to interact with object
 {
 	TraceForwardComponentInitialization();
 
-	GetItemType();
-	SetPickupItemState();
+	GetItem();
+
+	if (CurrentInteractableActor && CurrentInteractableActor->bCanBePickedUp)
+	{
+		if (!bPlayerHoldingItem)
+		{
+			bPlayerHoldingItem = true;
+			CurrentHoldingActor = CurrentInteractableActor;
+			SetPickupItemState();
+		}
+	}
 
 	ToggleStationaryItem();
 }
@@ -129,7 +140,12 @@ void AAACharacterBase::InteractPressed() // "E" - to interact with object
 
 void AAACharacterBase::DropPressed() // "G" - to drop object
 {
-	UE_LOG(LogTemp, Warning, TEXT("Drop Pressed!"));
+	if (bPlayerHoldingItem)
+	{
+		bPlayerHoldingItem = false;
+		SetPickupItemState();
+		CurrentHoldingActor = NULL;
+	}
 }
 
 
@@ -138,84 +154,114 @@ void AAACharacterBase::ActionPressed() // "LMB" - to use what equiped
 	UsePickupItem();
 }
 
+// TODO rewrite this
+void AAACharacterBase::AimDownSights() // "RMB" - to use what equiped
+{
+	float CameraDefaultFieldOfView = 90.0f;
+	if (bPlayerHoldingItem)
+	{
+		FVector StartPos = FVector(ItemHoldingComponent->GetRelativeLocation());
+
+		if (GetWorld()->GetFirstPlayerController()->IsInputKeyDown(FKey("RightMouseButton")))
+		{
+			FVector EndPos = FVector(StartPos.X, 0.0f, -35.0f);
+			FVector Movement = FMath::Lerp(StartPos, EndPos, 0.1f);
+
+			ItemHoldingComponent->SetRelativeLocation(Movement);
+			float ZoomFieldOfView = FMath::Lerp(55.0f, CameraDefaultFieldOfView, 0.001f);
+			CameraComp->SetFieldOfView(ZoomFieldOfView);
+		}
+	}
+	if (!(GetWorld()->GetFirstPlayerController()->IsInputKeyDown(FKey("RightMouseButton"))))
+	{
+		FVector StartPos = FVector(ItemHoldingComponent->GetRelativeLocation());
+		FVector EndPos = FVector(StartPos.X, 25.0f, -48.0f);
+		FVector Movement = FMath::Lerp(StartPos, EndPos, 0.1f);
+
+		ItemHoldingComponent->SetRelativeLocation(Movement);
+		float DefaultFieldOfView = FMath::Lerp(CameraDefaultFieldOfView, 55.0f, 0.001f);
+		CameraComp->SetFieldOfView(90.0f);
+	}
+}
+
+
+// TODO rewrite this
+void AAACharacterBase::ReloadItem() // "R" - to reload item charges
+{
+	Inventory = Cast<UPlayerInventory>(GetComponentByClass(UPlayerInventory::StaticClass()));
+	if (Inventory)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Reload!"));
+		int32 AmmoInInventory = Inventory->AmmoAmount;
+		int32 BatteriesInInventory = Inventory->BatteriesAmount;
+		if (bPlayerHoldingItem)
+		{
+			if (CurrentHoldingActor)
+			{
+				if (!CurrentHoldingActor->bCharged)
+				{
+					CurrentHoldingActor->ChargesAmount = AmmoInInventory;
+					CurrentHoldingActor->bCharged = true;
+				}
+			}
+		}
+	}
+}
+
 
 /// Item Interaction ///
-void AAACharacterBase::GetItemType()
+void AAACharacterBase::GetItem()
 {
-	//// if Interactable Actor ////
-	if (!bPlayerHoldingItem)
+	if (bHitByChannel)
 	{
-		if (bHitByChannel)
+		if (Hit.GetActor()->GetClass()->IsChildOf(ABaseInteractableActor::StaticClass()))
 		{
-			if (Hit.GetActor()->GetClass()->IsChildOf(ABaseInteractableActor::StaticClass()))
-			{
-				CurrentInteractableActor = Cast<ABaseInteractableActor>(Hit.GetActor());
-			}
-			else
-			{
-				CurrentInteractableActor = NULL;
-			}
+			CurrentInteractableActor = Cast<ABaseInteractableActor>(Hit.GetActor());
 		}
 		else
 		{
 			CurrentInteractableActor = NULL;
 		}
 	}
-
-	//// if Stationary Actor ////
-	if (bHitByChannel)
-	{
-		if (Hit.GetActor()->GetClass()->IsChildOf(ABaseInteractableActor::StaticClass()))
-		{
-			CurrentStationaryActor = Cast<ABaseInteractableActor>(Hit.GetActor());
-		}
-		else
-		{
-			CurrentStationaryActor = NULL;
-		}
-	}
 	else
 	{
-		CurrentStationaryActor = NULL;
+		CurrentInteractableActor = NULL;
 	}
 }
 
 
 void AAACharacterBase::SetPickupItemState()
 {
-	if (CurrentInteractableActor)
+	if (CurrentHoldingActor)
 	{
-		if (CurrentInteractableActor->bCanBePickedUp)
+		if (CurrentHoldingActor->bCanBePickedUp)
 		{
-			bPlayerHoldingItem = !bPlayerHoldingItem; // set to NOT (current state)
-
-			TArray<UStaticMeshComponent*> Components;
-			CurrentInteractableActor->GetComponents<UStaticMeshComponent>(Components);
-
+			TArray<USkeletalMeshComponent*> Components;
+			CurrentHoldingActor->GetComponents<USkeletalMeshComponent>(Components);
 			AttachItem(Components);
 		}
 		if (!bPlayerHoldingItem)
 		{
-			CurrentInteractableActor = NULL;
+			CurrentHoldingActor = NULL;
 		}
 	}
 }
 
 
-void AAACharacterBase::AttachItem(TArray<UStaticMeshComponent*>& Components)
+void AAACharacterBase::AttachItem(TArray<USkeletalMeshComponent*>& Components)
 {
-	bool bItemHolding = CurrentInteractableActor->bHolding; // get state from current object
-	bool bItemGravity = CurrentInteractableActor->bGravity; // get state from current object
+	bool bItemHolding = CurrentHoldingActor->bHolding; // get state from current object
+	bool bItemGravity = CurrentHoldingActor->bGravity; // get state from current object
 	bItemHolding = !bItemHolding; // set to NOT (current state)
-	CurrentInteractableActor->bHolding = bItemHolding;
+	CurrentHoldingActor->bHolding = bItemHolding;
 	bItemGravity = !bItemGravity; // set to NOT (current state)
-	CurrentInteractableActor->bGravity = bItemGravity;
+	CurrentHoldingActor->bGravity = bItemGravity;
 
-	UStaticMeshComponent* ItemMeshComponent;
+	USkeletalMeshComponent* ItemMeshComponent;
 
 	ForwardVector = CameraComp->GetForwardVector();
 
-	for (UStaticMeshComponent* MeshComponent : Components)
+	for (USkeletalMeshComponent* MeshComponent : Components)
 	{
 		if (MeshComponent->GetName() == "ItemMeshComponent")
 		{
@@ -227,10 +273,11 @@ void AAACharacterBase::AttachItem(TArray<UStaticMeshComponent*>& Components)
 
 			if (bItemHolding)
 			{
-				ItemMeshComponent->AttachToComponent(ItemHoldingComponent, FAttachmentTransformRules::KeepWorldTransform);
-				ItemMeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-				ItemMeshComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
-				SetActorLocation(ItemHoldingComponent->GetComponentLocation());
+				ItemMeshComponent->AttachToComponent(ItemHoldingComponent, FAttachmentTransformRules::SnapToTargetIncludingScale);
+				//ItemMeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+				//ItemMeshComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
+				//SetActorLocation(ItemHoldingComponent->GetComponentLocation());
+
 			}
 			else
 			{
@@ -244,11 +291,11 @@ void AAACharacterBase::AttachItem(TArray<UStaticMeshComponent*>& Components)
 
 void AAACharacterBase::ToggleStationaryItem()
 {
-	if (CurrentStationaryActor)
+	if (CurrentInteractableActor)
 	{
-		if (CurrentStationaryActor->bStationary)
+		if (CurrentInteractableActor->bStationary)
 		{
-			CurrentStationaryActor->Toggle();
+			CurrentInteractableActor->Toggle();
 		}
 	}
 }
@@ -258,28 +305,30 @@ void AAACharacterBase::UsePickupItem()
 {
 	if (bPlayerHoldingItem)
 	{
-		bPlayerButtonPressed = true;
-
-		if (CurrentInteractableActor->bCharged)
+		bPlayerActionButtonPressed = true;
+		if (CurrentHoldingActor)
 		{
-			bLastCharge = true;
-			CurrentInteractableActor->UseItem();
+			if (CurrentHoldingActor->bCharged)
+			{
+				bLastCharge = true;
+				CurrentHoldingActor->UseItem();
+			}
 		}
 	}
 }
 
 
-void AAACharacterBase::RepairStationaryActor() // TODO fix bCharged amount
+void AAACharacterBase::RepairStationaryActor()
 {
 	TraceForwardComponentInitialization();
-	GetItemType();
+	GetItem();
 
-	if (CurrentStationaryActor && CurrentStationaryActor->bStationary && CurrentStationaryActor->bBroken)
+	if (CurrentInteractableActor && CurrentInteractableActor->bStationary && CurrentInteractableActor->bBroken)
 	{
 		if (bLastCharge)
 		{
-			CurrentStationaryActor->bBroken = false;
-			CurrentStationaryActor->SetBeginItemCondition();
+			CurrentInteractableActor->bBroken = false;
+			//CurrentInteractableActor->SetBeginItemCondition();
 		}
 	}
 }

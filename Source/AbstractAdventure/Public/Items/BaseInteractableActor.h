@@ -10,6 +10,7 @@ class UBoxComponent;
 class USceneComponent;
 class UNiagaraComponent;
 class UMaterialInterface;
+class UPlayerInventory;
 
 UCLASS()
 class ABSTRACTADVENTURE_API ABaseInteractableActor : public AActor
@@ -20,23 +21,41 @@ public:
 	// Sets default values for this actor's properties
 	ABaseInteractableActor();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemParameters")
-	UStaticMeshComponent* ItemMeshComp;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemGameplay")
+	USkeletalMeshComponent* ItemMeshComp;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemParameters")
-	UStaticMeshComponent* BrokenMeshComp;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemGameplay")
+	USkeletalMeshComponent* BrokenMeshComp;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemParameters")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemGameplayParameters")
 	UBoxComponent* ItemCollisionComp;
 
-	UPROPERTY(VisibleDefaultsOnly, Category = "ItemParameters")
+	UPROPERTY(VisibleDefaultsOnly, Category = "GameplayParameters")
 	USceneComponent* ItemMuzzleLocation;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Building")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemBuilding")
 	TSoftObjectPtr<AActor> ReferencedItemActor;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemFX")
 	UNiagaraComponent* ItemFXComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemGameplay")
+	UAnimMontage* UseAnimation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemGameplay")
+	UAnimMontage* ReloadAnimation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemGameplay")
+	UAnimMontage* EmptyAnimation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemGameplay")
+	USoundBase* UseSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemGameplay")
+	USoundBase* ReloadSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemGameplay")
+	USoundBase* EmptySound;
 
 protected:
 	// Called when the game starts or when spawned
@@ -49,39 +68,49 @@ private:
 
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-	
+
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemStates")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemGameplayParameters")
 	bool bBroken;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemStates")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemGameplayParameters")
 	bool bCharged;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemStates")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemGameplayParameters")
 	bool bToggled;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemProperties")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemGameplayParameters")
 	int32 ChargesAmount;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemProperties")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemGameplayParameters")
 	bool bCanBeCharged;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemProperties")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemGameplayParameters")
 	bool bCanBePickedUp;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemProperties")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemGameplayParameters")
 	bool bCanBeUsedPickedUp;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemProperties")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemGameplayParameters")
 	bool bStationary;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemProperties")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemGameplayParameters")
 	bool bCharger;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemProperties")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemGameplayParameters")
 	bool bRepairItem;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemGameplayParameters")
+	bool bAmmo;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ItemGameplayParameters")
+	bool bBattaries;
+
 	void UseItem();
+
+	void PlayMontage(UAnimMontage* Montage);
+
+	void PlaySound(USoundBase* Sound);
 
 	void Charge(AActor* OtherActor);
 
@@ -91,7 +120,7 @@ public:
 
 	void SwitchMaterial();
 
-	void SetBeginItemCondition();
+	//void SetBeginItemCondition();
 
 	void ContactReferencedItemActor();
 
@@ -100,4 +129,5 @@ public:
 	bool bHolding;
 
 	bool bGravity;
+
 };

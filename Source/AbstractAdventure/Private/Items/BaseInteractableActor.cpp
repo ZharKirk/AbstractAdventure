@@ -1,7 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
+#include "PlayerInventory.h"
 #include "Items/BaseInteractableActor.h"
+//
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -13,12 +14,12 @@
 // Sets default values
 ABaseInteractableActor::ABaseInteractableActor()
 {
-	ItemMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ItemMeshComponent"));
+	ItemMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ItemMeshComponent"));
 	ItemMeshComp->SetSimulatePhysics(true);
 	ItemMeshComp->SetupAttachment(RootComponent);
 	RootComponent = ItemMeshComp;
 
-	BrokenMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BrokenMeshComponent"));
+	BrokenMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("BrokenMeshComponent"));
 	BrokenMeshComp->SetupAttachment(RootComponent);
 
 	ItemCollisionComp = CreateDefaultSubobject<UBoxComponent>(TEXT("ItemCollisionComponent"));
@@ -33,6 +34,9 @@ ABaseInteractableActor::ABaseInteractableActor()
 	ItemFXComponent->SetupAttachment(ItemMuzzleLocation);
 
 	bToggled = false;
+
+	bAmmo = false;
+	bBattaries = false;
 
 	bBroken = false;
 	bCanBeCharged = false;
@@ -52,13 +56,12 @@ ABaseInteractableActor::ABaseInteractableActor()
 }
 
 
-// Called when the game starts or when spawned
 void ABaseInteractableActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SetBeginItemCondition();
 	SetBaseDynamicMaterial();
+	//SetBeginItemCondition();
 
 	if (ItemFXComponent) { ItemFXComponent->Deactivate(); } // Maybe there is a better way ...
 	ItemCollisionComp->OnComponentBeginOverlap.AddDynamic(this, &ABaseInteractableActor::OnHit);
@@ -67,13 +70,21 @@ void ABaseInteractableActor::BeginPlay()
 
 void ABaseInteractableActor::SetBaseDynamicMaterial()
 {
-	int32 BaseMaterialIndex = 0;
-	UMaterialInterface* BaseItemMaterial = ItemMeshComp->GetMaterial(BaseMaterialIndex);
-	ItemBaseDynamicMaterial = UMaterialInstanceDynamic::Create(BaseItemMaterial, NULL);
-	ItemMeshComp->SetMaterial(BaseMaterialIndex, ItemBaseDynamicMaterial);
+	TArray<FName> MatSlots = ItemMeshComp->GetMaterialSlotNames();
+	for (FName MatSlot : MatSlots)
+	{
+		if (MatSlot == "SwitchStateMaterial")
+		{
+			int32 MaterialSlotIndex = ItemMeshComp->GetMaterialIndex(MatSlot);
+			UMaterialInterface* BaseItemMaterial = ItemMeshComp->GetMaterial(MaterialSlotIndex);
+			ItemBaseDynamicMaterial = UMaterialInstanceDynamic::Create(BaseItemMaterial, NULL);
+			ItemMeshComp->SetMaterial(MaterialSlotIndex, ItemBaseDynamicMaterial);
+			//UE_LOG(LogTemp, Warning, TEXT("Material Slot: %s %i"), *MatSlot.ToString(), MaterialSlotIndex);
+		}
+	}
 }
 
-
+/*
 void ABaseInteractableActor::SetBeginItemCondition()
 {
 	if (bBroken)
@@ -86,7 +97,6 @@ void ABaseInteractableActor::SetBeginItemCondition()
 		bStationary = true;
 		bRepairItem = false;
 		bCharger = false;
-		//UE_LOG(LogTemp, Warning, TEXT("bBroken state switched!"));
 	}
 	else
 	{
@@ -101,32 +111,29 @@ void ABaseInteractableActor::SetBeginItemCondition()
 	if (bCharged)
 	{
 		ChargesAmount = 5;
+		SwitchMaterial();
 	}
 	if (bStationary)
 	{
 		bCharger = false;
 		bCanBePickedUp = false;
 		bCanBeUsedPickedUp = false;
-		//UE_LOG(LogTemp, Warning, TEXT("bStationary state switched!"));
 	}
 	if (bCanBePickedUp)
 	{
 		bStationary = false;
-		//UE_LOG(LogTemp, Warning, TEXT("bCanBePickedUp state switched!"));
 	}
 	if (bCanBeUsedPickedUp)
 	{
 		bCharger = false;
 		bStationary = false;
 		bCanBePickedUp = true;
-		//UE_LOG(LogTemp, Warning, TEXT("bCanBeUsedPickedUp state switched!"));
 	}
 	if (bCharger)
 	{
 		bStationary = false;
 		bCanBePickedUp = true;
 		bCanBeUsedPickedUp = false;
-		//UE_LOG(LogTemp, Warning, TEXT("bCharger state switched!"));
 	}
 	if (bRepairItem)
 	{
@@ -134,23 +141,25 @@ void ABaseInteractableActor::SetBeginItemCondition()
 		bStationary = false;
 		bCanBePickedUp = true;
 		bCanBeUsedPickedUp = true;
-		//UE_LOG(LogTemp, Warning, TEXT("bRepairItem state switched!"));
 	}
-}
+}*/
 
 
 void ABaseInteractableActor::SwitchMaterial()
 {
-	float OutValue = 0;
-	ItemBaseDynamicMaterial->GetScalarParameterValue(TEXT("Switch"), OutValue);
+	if (ItemBaseDynamicMaterial)
+	{
+		float OutValue = 0;
+		ItemBaseDynamicMaterial->GetScalarParameterValue(TEXT("Switch"), OutValue);
 
-	if (OutValue == 0.000000f)
-	{
-		ItemBaseDynamicMaterial->SetScalarParameterValue(TEXT("Switch"), 1);
-	}
-	else
-	{
-		ItemBaseDynamicMaterial->SetScalarParameterValue(TEXT("Switch"), 0);
+		if (OutValue == 0.000000f)
+		{
+			ItemBaseDynamicMaterial->SetScalarParameterValue(TEXT("Switch"), 1);
+		}
+		else
+		{
+			ItemBaseDynamicMaterial->SetScalarParameterValue(TEXT("Switch"), 0);
+		}
 	}
 }
 
@@ -164,18 +173,36 @@ void ABaseInteractableActor::UseItem() // TODO Rewrite this
 			bCharged = true;
 
 			PlayFX();
+			PlayMontage(UseAnimation);
+			PlaySound(UseSound);
 
 			ChargesAmount--;
 
 			if (!ChargesAmount) 
 			{
 				bCharged = false;
-
-				UE_LOG(LogTemp, Warning, TEXT("No charges left!"));
+				SwitchMaterial();
 			}
-
-			UE_LOG(LogTemp, Warning, TEXT("charges: %i"), ChargesAmount);
 		}
+	}
+}
+
+void ABaseInteractableActor::PlaySound(USoundBase* Sound)
+{
+	if (Sound != nullptr)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, Sound, this->GetActorLocation());
+	}
+}
+
+void ABaseInteractableActor::PlayMontage(UAnimMontage * Montage)
+{
+
+	UAnimInstance* AnimInstance = BrokenMeshComp->GetAnimInstance();
+
+	if (AnimInstance != nullptr)
+	{
+		AnimInstance->Montage_Play(Montage, 1.0f);
 	}
 }
 
@@ -203,7 +230,6 @@ void ABaseInteractableActor::Toggle()
 
 void ABaseInteractableActor::OnHit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *OtherActor->GetName());
 	Charge(OtherActor);
 }
 
@@ -216,7 +242,7 @@ void ABaseInteractableActor::Charge(AActor* OtherActor)
 		{
 			ABaseInteractableActor* ChargerItem = Cast<ABaseInteractableActor>(OtherActor);
 
-			if (ChargerItem->bCharger)
+			if (ChargerItem && ChargerItem->bCharger)
 			{
 				this->bCharged = true;
 				this->ChargesAmount = 10;
@@ -240,7 +266,7 @@ void ABaseInteractableActor::ContactReferencedItemActor()
 
 	if (ResultActor)
 	{
-		// As an example ResultActor->SwitchMaterial();
+		// ResultActor->SwitchMaterial(); // As an example 
 		UE_LOG(LogTemp, Warning, TEXT("%s - respond!"), *ResultActor->GetName());
 	}
 	else
